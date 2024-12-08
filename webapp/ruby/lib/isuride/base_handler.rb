@@ -5,7 +5,6 @@ require 'mysql2-cs-bind'
 require 'sinatra/base'
 require 'sinatra/cookies'
 require 'sinatra/json'
-require 'stackprof'
 
 # mysql2-cs-bind gem にマイクロ秒のサポートを入れる
 module Mysql2CsBindPatch
@@ -24,10 +23,6 @@ module Isuride
     INITIAL_FARE = 500
     FARE_PER_DISTANCE = 100
 
-    use StackProf::Middleware, enabled: true,
-                               mode: :cpu,
-                               interval: 1000,
-                               save_every: 5
     enable :logging
     set :show_exceptions, :after_handler
 
