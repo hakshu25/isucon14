@@ -399,13 +399,10 @@ module Isuride
         end
 
       response = db_transaction do |tx|
-        chairs = tx.query('SELECT * FROM chairs')
+        # 有効な椅子を事前に取得
+        chairs = tx.xquery('SELECT * FROM chairs WHERE is_active = TRUE')
 
         nearby_chairs = chairs.filter_map do |chair|
-          unless chair.fetch(:is_active)
-            next
-          end
-
           rides = tx.xquery('SELECT * FROM rides WHERE chair_id = ? ORDER BY created_at DESC LIMIT 1', chair.fetch(:id))
 
           skip = false
