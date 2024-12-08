@@ -163,14 +163,20 @@ build:
 .PHONY: restart
 restart:
 	sudo systemctl daemon-reload
+ifeq ($(SERVER_ID),s2)
+  # 2台目はmysqlのみ再起動
+	sudo systemctl restart mysql
+else
 	sudo systemctl restart $(SERVICE_NAME)
 	sudo systemctl restart mysql
 	sudo systemctl restart nginx
+endif
 
 .PHONY: mv-logs
 mv-logs:
 	$(eval when := $(shell date "+%s"))
-	mkdir -p ~/logs/$(when)
+	mkdir -p ~/logs/nginx/$(when)
+	mkdir -p ~/logs/mysql/$(when)
 	sudo test -f $(NGINX_LOG) && \
 		sudo mv -f $(NGINX_LOG) ~/logs/nginx/$(when)/ || echo ""
 	sudo test -f $(DB_SLOW_LOG) && \
