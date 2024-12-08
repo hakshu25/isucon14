@@ -6,6 +6,7 @@ require 'sinatra/base'
 require 'sinatra/cookies'
 require 'sinatra/json'
 require 'stackprof'
+require 'connection_pool'
 
 # mysql2-cs-bind gem にマイクロ秒のサポートを入れる
 module Mysql2CsBindPatch
