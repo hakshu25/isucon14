@@ -119,8 +119,8 @@ module Isuride
         is_active,
         created_at,
         updated_at,
-        total_distance,
-        total_distance_updated_at
+        chairs.total_distance,
+        chairs.total_distance_updated_at
         FROM chairs
         WHERE owner_id = ?
       SQL
