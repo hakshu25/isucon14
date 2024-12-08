@@ -170,7 +170,8 @@ restart:
 .PHONY: mv-logs
 mv-logs:
 	$(eval when := $(shell date "+%s"))
-	mkdir -p ~/logs/$(when)
+	mkdir -p ~/logs/nginx/$(when)
+	mkdir -p ~/logs/mysql/$(when)
 	sudo test -f $(NGINX_LOG) && \
 		sudo mv -f $(NGINX_LOG) ~/logs/nginx/$(when)/ || echo ""
 	sudo test -f $(DB_SLOW_LOG) && \
