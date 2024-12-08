@@ -5,7 +5,7 @@ require 'isuride/base_handler'
 module Isuride
   class InternalHandler < BaseHandler
     get '/matching' do
-      ride = db.query('SELECT * FROM rides WHERE chair_id IS NULL ORDER BY created_at LIMIT 1').first
+      ride = db.query('SELECT * FROM rides WHERE chair_id IS NULL ORDER BY created_at LIMIT 1 FOR UPDATE').first
       halt 204 unless ride
 
       # 目的地座標の取得
