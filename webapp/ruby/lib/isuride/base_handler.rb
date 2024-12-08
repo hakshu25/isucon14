@@ -7,6 +7,9 @@ require 'sinatra/cookies'
 require 'sinatra/json'
 require 'stackprof'
 
+require 'sinatra/custom_logger'
+require 'logger'
+
 # mysql2-cs-bind gem にマイクロ秒のサポートを入れる
 module Mysql2CsBindPatch
   def quote(rawvalue)
@@ -30,6 +33,12 @@ module Isuride
                                save_every: 5
     enable :logging
     set :show_exceptions, :after_handler
+
+    helpers Sinatra::CustomLogger
+    configure :development, :production do
+      logger = Logger.new($stdout)
+      set :logger, logger
+    end
 
     class HttpError < Sinatra::Error
       attr_reader :code

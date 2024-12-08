@@ -134,6 +134,8 @@ module Isuride
         WHERE owner_id = ?
       SQL
 
+      logger.info("chairs: #{chairs.to_a.inspect}")
+
       json(
         chairs: chairs.map { |chair|
           {
