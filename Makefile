@@ -163,9 +163,14 @@ build:
 .PHONY: restart
 restart:
 	sudo systemctl daemon-reload
+ifeq ($(SERVER_ID),s2)
+  # 2台目はmysqlのみ再起動
+	sudo systemctl restart mysql
+else
 	sudo systemctl restart $(SERVICE_NAME)
 	sudo systemctl restart mysql
 	sudo systemctl restart nginx
+endif
 
 .PHONY: mv-logs
 mv-logs:
