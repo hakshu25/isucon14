@@ -23,6 +23,8 @@ module Isuride
   class BaseHandler < Sinatra::Base
     INITIAL_FARE = 500
     FARE_PER_DISTANCE = 100
+    POOL_SIZE = 5
+    POOL_TIMEOUT = 5
 
     use StackProf::Middleware, enabled: true,
                                mode: :cpu,
@@ -30,6 +32,12 @@ module Isuride
                                save_every: 5
     enable :logging
     set :show_exceptions, :after_handler
+
+    def self.db_pool
+      @db_pool ||= ConnectionPool.new(size: POOL_SIZE, timeout: POOL_TIMEOUT) do
+        connect_db
+      end
+    end
 
     class HttpError < Sinatra::Error
       attr_reader :code
@@ -54,7 +62,15 @@ module Isuride
       end
 
       def db
-        Thread.current[:db] ||= connect_db
+        self.class.db_pool.with do |conn|
+          begin
+            conn.ping
+          rescue Mysql2::Error
+            conn = connect_db
+          end
+          yield conn if block_given?
+          conn
+        end
       end
 
       def connect_db
@@ -71,17 +87,16 @@ module Isuride
         )
       end
 
-      def db_transaction(&block)
-        db.query('BEGIN')
-        ok = false
-        begin
-          retval = block.call(db)
-          db.query('COMMIT')
-          ok = true
-          retval
-        ensure
-          unless ok
-            db.query('ROLLBACK')
+      def db_transaction
+        db do |conn|
+          conn.query('BEGIN')
+          begin
+            result = yield conn
+            conn.query('COMMIT')
+            result
+          rescue => e
+            conn.query('ROLLBACK')
+            raise e
           end
         end
       end
