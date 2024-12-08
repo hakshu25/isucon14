@@ -36,7 +36,39 @@ module Isuride
 
     def self.db_pool
       @db_pool ||= ConnectionPool.new(size: POOL_SIZE, timeout: POOL_TIMEOUT) do
-        connect_db
+        new_db_connection
+      end
+    end
+
+    def self.new_db_connection
+      retries = 0
+      max_retries = 3
+      begin
+        Mysql2::Client.new(
+          host: ENV.fetch('ISUCON_DB_HOST', '127.0.0.1'),
+          port: ENV.fetch('ISUCON_DB_PORT', '3306').to_i,
+          username: ENV.fetch('ISUCON_DB_USER', 'isucon'),
+          password: ENV.fetch('ISUCON_DB_PASSWORD', 'isucon'),
+          database: ENV.fetch('ISUCON_DB_NAME', 'isuride'),
+          symbolize_keys: true,
+          cast_booleans: true,
+          database_timezone: :utc,
+          application_timezone: :utc,
+          connect_timeout: 5,
+          reconnect: true,
+          init_command: "SET NAMES utf8mb4"
+        )
+      rescue Mysql2::Error => e
+        retries += 1
+        if retries <= max_retries
+          sleep_time = 2 ** retries
+          logger.warn "Database connection failed. Retrying in #{sleep_time} seconds... (#{retries}/#{max_retries})"
+          sleep(sleep_time)
+          retry
+        else
+          logger.error "Failed to connect to database after #{max_retries} attempts: #{e.message}"
+          raise e
+        end
       end
     end
 
@@ -67,25 +99,11 @@ module Isuride
           begin
             conn.ping
           rescue Mysql2::Error
-            conn = connect_db
+            conn = self.class.new_db_connection
           end
           yield conn if block_given?
           conn
         end
-      end
-
-      def connect_db
-        Mysql2::Client.new(
-          host: ENV.fetch('ISUCON_DB_HOST', '127.0.0.1'),
-          port: ENV.fetch('ISUCON_DB_PORT', '3306').to_i,
-          username: ENV.fetch('ISUCON_DB_USER', 'isucon'),
-          password: ENV.fetch('ISUCON_DB_PASSWORD', 'isucon'),
-          database: ENV.fetch('ISUCON_DB_NAME', 'isuride'),
-          symbolize_keys: true,
-          cast_booleans: true,
-          database_timezone: :utc,
-          application_timezone: :utc,
-        )
       end
 
       def db_transaction
