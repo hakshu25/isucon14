@@ -46,7 +46,7 @@ slow-query:
 # alpでアクセスログを確認する
 .PHONY: alp
 alp:
-	sudo alp ltsv --file=$(NGINX_LOG) --config=/home/isucon/tool-config/alp/config.yml
+	sudo alp ltsv --file=$(NGINX_LOG) --sort=sum --reverse
 
 # pprofで記録する
 .PHONY: pprof-record
