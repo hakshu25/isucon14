@@ -72,7 +72,6 @@ module Isuride
             database_timezone: :utc,
             application_timezone: :utc,
             connect_timeout: 10,
-            reconnect: true,
           )
         rescue Mysql2::Error => e
           retries += 1
