@@ -399,8 +399,14 @@ module Isuride
         end
 
       response = db_transaction do |tx|
-        # 有効な椅子を事前に取得
-        chairs = tx.xquery('SELECT * FROM chairs WHERE is_active = TRUE')
+        # 有効な椅子を事前に取得し、モデルのスピードで降順ソート
+        chairs = tx.xquery(<<~SQL)
+          SELECT chairs.*
+          FROM chairs
+          JOIN chair_models ON chairs.model = chair_models.name
+          WHERE chairs.is_active = TRUE
+          ORDER BY chair_models.speed DESC
+        SQL
 
         # 椅子IDをまとめて取得
         chair_ids = chairs.map { |chair| chair.fetch(:id) }
