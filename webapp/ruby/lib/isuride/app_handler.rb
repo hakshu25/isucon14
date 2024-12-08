@@ -402,21 +402,30 @@ module Isuride
         # 有効な椅子を事前に取得
         chairs = tx.xquery('SELECT * FROM chairs WHERE is_active = TRUE')
 
-        nearby_chairs = chairs.filter_map do |chair|
-          rides = tx.xquery('SELECT * FROM rides WHERE chair_id = ? ORDER BY created_at DESC LIMIT 1', chair.fetch(:id))
+        # 椅子IDをまとめて取得
+        chair_ids = chairs.map { |chair| chair.fetch(:id) }
 
-          skip = false
-          rides.each do |ride|
-            # 過去にライドが存在し、かつ、それが完了していない場合はスキップ
-            status = get_latest_ride_status(tx, ride.fetch(:id))
-            if status != 'COMPLETED'
-              skip = true
-              break
-            end
-          end
-          if skip
-            next
-          end
+        # 椅子IDに対応する最新ライドステータスを一括取得
+        ride_statuses = tx.xquery(<<~SQL, chair_ids)
+          SELECT rides.id AS ride_id, rides.chair_id, ride_statuses.status
+          FROM rides
+          JOIN ride_statuses ON rides.id = ride_statuses.ride_id
+          WHERE rides.chair_id IN (?)
+          ORDER BY rides.created_at DESC
+        SQL
+
+        # ライドステータスを整理してマッピング
+        ride_status_map = ride_statuses.each_with_object({}) do |ride_status, map|
+          map[ride_status[:chair_id]] ||= []
+          map[ride_status[:chair_id]] << ride_status[:status]
+        end
+
+        # 有効な椅子をフィルタリング
+        nearby_chairs = chairs.filter_map do |chair|
+          chair_id = chair.fetch(:id)
+
+          statuses = ride_status_map[chair_id] || []
+          next if statuses.any? { |status| status != 'COMPLETED' }
 
           # 最新の位置情報を取得
           chair_location = tx.xquery('SELECT * FROM chair_locations WHERE chair_id = ? ORDER BY created_at DESC LIMIT 1', chair.fetch(:id)).first
