@@ -7,7 +7,7 @@ endif
 
 # 問題によって変わる変数
 USER:=isucon
-BIN_NAME:=isupipe
+BIN_NAME:=isuride
 BUILD_DIR:=/home/isucon/webapp/ruby
 SERVICE_NAME:=$(BIN_NAME)-ruby.service
 REPO_NAME:=isucon14
@@ -97,7 +97,7 @@ git-setup:
 .PHONY: enable-ruby-service
 enable-ruby-service:
 	sudo systemctl disable --now $(BIN_NAME)-go.service
-  sudo systemctl enable --now $(SERVICE_NAME)
+	sudo systemctl enable --now $(SERVICE_NAME)
 
 .PHONY: check-server-id
 check-server-id:
