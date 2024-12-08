@@ -58,17 +58,33 @@ module Isuride
       end
 
       def connect_db
-        Mysql2::Client.new(
-          host: ENV.fetch('ISUCON_DB_HOST', '127.0.0.1'),
-          port: ENV.fetch('ISUCON_DB_PORT', '3306').to_i,
-          username: ENV.fetch('ISUCON_DB_USER', 'isucon'),
-          password: ENV.fetch('ISUCON_DB_PASSWORD', 'isucon'),
-          database: ENV.fetch('ISUCON_DB_NAME', 'isuride'),
-          symbolize_keys: true,
-          cast_booleans: true,
-          database_timezone: :utc,
-          application_timezone: :utc,
-        )
+        retries = 0
+        max_retries = 5  # 最大リトライ回数
+        begin
+          Mysql2::Client.new(
+            host: ENV.fetch('ISUCON_DB_HOST', '127.0.0.1'),
+            port: ENV.fetch('ISUCON_DB_PORT', '3306').to_i,
+            username: ENV.fetch('ISUCON_DB_USER', 'isucon'),
+            password: ENV.fetch('ISUCON_DB_PASSWORD', 'isucon'),
+            database: ENV.fetch('ISUCON_DB_NAME', 'isuride'),
+            symbolize_keys: true,
+            cast_booleans: true,
+            database_timezone: :utc,
+            application_timezone: :utc,
+            connect_timeout: 10,
+          )
+        rescue Mysql2::Error => e
+          retries += 1
+          if retries <= max_retries
+            sleep_time = 5
+            logger.warn "Database connection failed. Retrying in #{sleep_time} seconds... (#{retries}/#{max_retries})"
+            sleep(sleep_time)
+            retry
+          else
+            logger.error "Failed to connect to database after #{max_retries} attempts: #{e.message}"
+            raise e
+          end
+        end
       end
 
       def db_transaction(&block)
