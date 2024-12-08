@@ -5,7 +5,7 @@ After=mysql.service
 Requires=mysql.service
 
 [Service]
-WorkingDirectory=/home/isucon/webapp/ruby
+WorkingDirectory=/home/isucon/isucon14/webapp/ruby
 Environment=RUBY_YJIT_ENABLE=1
 EnvironmentFile=/home/isucon/env.sh
 

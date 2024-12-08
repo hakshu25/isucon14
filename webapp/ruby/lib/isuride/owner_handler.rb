@@ -112,27 +112,40 @@ module Isuride
     get '/chairs' do
       chairs = db.xquery(<<~SQL, @current_owner.id)
         SELECT id,
-        owner_id,
-        name,
-        access_token,
-        model,
-        is_active,
-        created_at,
-        updated_at,
-        IFNULL(total_distance, 0) AS total_distance,
-        total_distance_updated_at
+          owner_id,
+          name,
+          access_token,
+          model,
+          is_active,
+          created_at,
+          updated_at
         FROM chairs
-        LEFT JOIN (SELECT chair_id,
-                           SUM(IFNULL(distance, 0)) AS total_distance,
-                           MAX(created_at)          AS total_distance_updated_at
-                    FROM (SELECT chair_id,
-                                 created_at,
-                                 ABS(latitude - LAG(latitude) OVER (PARTITION BY chair_id ORDER BY created_at)) +
-                                 ABS(longitude - LAG(longitude) OVER (PARTITION BY chair_id ORDER BY created_at)) AS distance
-                          FROM chair_locations) tmp
-                    GROUP BY chair_id) distance_table ON distance_table.chair_id = chairs.id
         WHERE owner_id = ?
       SQL
+
+      chair_ids = chairs.map { |chair| chair[:id] }
+      distances = db.xquery(<<~SQL, chair_ids)
+        SELECT chair_id,
+          SUM(IFNULL(distance, 0)) AS total_distance,
+          MAX(created_at)          AS total_distance_updated_at
+        FROM (SELECT chair_id,
+          created_at,
+          ABS(latitude - LAG(latitude) OVER (PARTITION BY chair_id ORDER BY created_at)) +
+          ABS(longitude - LAG(longitude) OVER (PARTITION BY chair_id ORDER BY created_at)) AS distance
+        FROM chair_locations
+        WHERE chair_id IN (?)) tmp
+        GROUP BY chair_id
+      SQL
+
+      distance_map = distances.each_with_object({}) do |row, hash|
+        hash[row[:chair_id]] = row
+      end
+
+      chairs.each do |chair|
+        distance_info = distance_map[chair[:id]]
+        chair[:total_distance] = distance_info ? distance_info[:total_distance] : 0
+        chair[:total_distance_updated_at] = distance_info ? distance_info[:total_distance_updated_at] : nil
+      end
 
       json(
         chairs: chairs.map { |chair|

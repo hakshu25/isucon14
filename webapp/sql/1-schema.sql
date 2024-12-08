@@ -35,6 +35,7 @@ CREATE TABLE chairs
   PRIMARY KEY (id)
 )
   COMMENT = '椅子情報テーブル';
+CREATE INDEX chairs_access_token ON chairs (access_token);
 
 DROP TABLE IF EXISTS chair_locations;
 CREATE TABLE chair_locations
@@ -47,6 +48,7 @@ CREATE TABLE chair_locations
   PRIMARY KEY (id)
 )
   COMMENT = '椅子の現在位置情報テーブル';
+CREATE INDEX chair_locations_chair_id_created_at ON chair_locations (chair_id, created_at);
 
 DROP TABLE IF EXISTS users;
 CREATE TABLE users
