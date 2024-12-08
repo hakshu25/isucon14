@@ -1,5 +1,5 @@
 ALTER TABLE chairs
-ADD COLUMN total_distance DOUBLE DEFAULT 0,
+ADD COLUMN total_distance INTEGER DEFAULT 0,
 ADD COLUMN total_distance_updated_at DATETIME DEFAULT NULL;
 
 -- 椅子の移動距離を累積するトリガー
@@ -8,7 +8,7 @@ CREATE TRIGGER update_total_distance
 AFTER INSERT ON chair_locations
 FOR EACH ROW
 BEGIN
-    DECLARE distance DOUBLE DEFAULT 0;
+    DECLARE distance INTEGER DEFAULT 0;
 
     -- 現在のレコードと直前のレコードから距離を計算
     SELECT ABS(NEW.latitude - latitude) + ABS(NEW.longitude - longitude)
