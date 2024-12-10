@@ -9,8 +9,8 @@ module Isuride
       halt 204 unless ride
 
       # 目的地座標の取得
-      destination_lat = ride.fetch(:destination_lat)
-      destination_lon = ride.fetch(:destination_lon)
+      destination_lat = ride.fetch(:destination_latitude)
+      destination_lon = ride.fetch(:destination_longitude)
 
       # 椅子候補を取得し、最速到着時間を算出
       chairs = db.xquery(<<~SQL, ride.fetch(:id))
